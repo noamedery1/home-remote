@@ -1,0 +1,734 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1d3557">
+<meta name="robots" content="noindex">
+<title>שלט הבית</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏠</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700&family=Secular+One&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #eef3f9; --bg2: #e3ebf5; --card: #ffffff; --ink: #14213d; --ink2: #5b6b85; --line: #d8e1ee;
+  --brand: #1d3557; --accent: #f4a261; --ok: #2a9d8f; --warn: #e9c46a; --bad: #e63946;
+  --shadow: 0 1px 2px rgba(20,33,61,.06), 0 6px 20px rgba(20,33,61,.07);
+  --r: 18px; --tv: #1d3557;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1626; --bg2: #152036; --card: #182540; --ink: #edf2fa; --ink2: #93a4c1; --line: #24344f;
+    --brand: #8fb3ff; --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.25);
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1626; --bg2: #152036; --card: #182540; --ink: #edf2fa; --ink2: #93a4c1; --line: #24344f;
+  --brand: #8fb3ff; --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.25);
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; background: var(--bg); color: var(--ink); font: 400 16px/1.45 Rubik, system-ui, sans-serif; }
+body { min-height: 100vh; padding-bottom: env(safe-area-inset-bottom); }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; border: 0; background: none; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+h1, h2, h3 { font-family: "Secular One", Rubik, sans-serif; font-weight: 400; margin: 0; }
+.hide { display: none !important; }
+
+/* ---------- top bar + tabs */
+.top { position: sticky; top: 0; z-index: 20; background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(12px); border-bottom: 1px solid var(--line); }
+.bar { max-width: 1100px; margin: 0 auto; display: flex; align-items: center; gap: 12px; padding: 12px 16px 6px; }
+.bar h1 { font-size: 24px; flex: 1; display: flex; align-items: center; gap: 8px; }
+.bar h1 span.house { font-size: 26px; }
+.me { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ink2); }
+.me img { width: 30px; height: 30px; border-radius: 50%; }
+.iconbtn { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: var(--card); box-shadow: var(--shadow); font-size: 16px; }
+.tabs { max-width: 1100px; margin: 0 auto; display: flex; gap: 6px; padding: 6px 16px 10px; overflow-x: auto; scrollbar-width: none; }
+.tabs::-webkit-scrollbar { display: none; }
+.tab { flex: none; display: flex; align-items: center; gap: 7px; padding: 8px 14px; border-radius: 999px; background: var(--card); box-shadow: var(--shadow); font-weight: 500; font-size: 15px; white-space: nowrap; }
+.tab .em { font-size: 18px; }
+.tab[aria-selected="true"] { background: var(--brand); color: #fff; }
+:root[data-theme="dark"] .tab[aria-selected="true"], .dark .tab[aria-selected="true"] { color: #0e1626; }
+.dot { width: 9px; height: 9px; border-radius: 50%; background: #9aa7bd; flex: none; }
+.dot.on { background: var(--ok); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ok) 25%, transparent); }
+.dot.idle { background: var(--warn); }
+
+main { max-width: 1100px; margin: 0 auto; padding: 18px 16px 60px; }
+.section { margin-top: 22px; }
+.section > h2 { font-size: 19px; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+.hint { color: var(--ink2); font-size: 14px; }
+
+/* ---------- cards */
+.card { background: var(--card); border-radius: var(--r); box-shadow: var(--shadow); padding: 16px; }
+.grid { display: grid; gap: 12px; }
+.tvs { grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); }
+
+.tvcard { position: relative; overflow: hidden; border-top: 5px solid var(--tv); }
+.tvhead { display: flex; align-items: center; gap: 12px; }
+.tvicon { width: 52px; height: 52px; border-radius: 16px; display: grid; place-items: center; font-size: 30px; background: color-mix(in srgb, var(--tv) 16%, var(--card)); flex: none; }
+.tvname { font-family: "Secular One", Rubik; font-size: 21px; line-height: 1.1; }
+.state { display: flex; align-items: center; gap: 6px; font-size: 14px; color: var(--ink2); margin-top: 3px; }
+.playing { display: flex; align-items: center; gap: 10px; margin-top: 14px; padding: 10px 12px; border-radius: 12px; background: var(--bg2); font-size: 15px; min-height: 52px; }
+.playing img { width: 32px; height: 32px; border-radius: 8px; }
+.playing b { font-weight: 600; }
+.pills { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.pill { font-size: 12.5px; padding: 3px 10px; border-radius: 999px; background: var(--bg2); color: var(--ink2); }
+.pill.lock { background: color-mix(in srgb, var(--bad) 15%, var(--card)); color: var(--bad); font-weight: 600; }
+.pill.moon { background: color-mix(in srgb, #7b61ff 15%, var(--card)); color: #7b61ff; font-weight: 600; }
+.quick { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 14px; }
+
+/* action tiles */
+.act { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 12px 6px; min-height: 78px; border-radius: 14px; background: var(--bg2); font-size: 13px; font-weight: 500; text-align: center; transition: transform .12s, background .12s; }
+.act .ic { font-size: 26px; line-height: 1; }
+.act:hover { background: color-mix(in srgb, var(--tv) 14%, var(--bg2)); }
+.act:active { transform: scale(.95); }
+.act[disabled] { opacity: .4; pointer-events: none; }
+.act.on { background: var(--tv); color: #fff; }
+.acts { grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); }
+
+/* tv hero */
+.hero { display: grid; gap: 16px; grid-template-columns: 1fr; border-top: 6px solid var(--tv); }
+@media (min-width: 760px) { .hero { grid-template-columns: 1.1fr 1fr; align-items: center; } }
+.hero .tvicon { width: 72px; height: 72px; font-size: 42px; border-radius: 22px; }
+.hero .tvname { font-size: 30px; }
+.vol { display: flex; align-items: center; gap: 12px; }
+.vol input { flex: 1; accent-color: var(--tv); height: 28px; }
+.vol .num { min-width: 34px; text-align: center; font-weight: 600; }
+
+.apps { grid-template-columns: repeat(auto-fill, minmax(86px, 1fr)); }
+.app { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px 4px; border-radius: 14px; font-size: 12.5px; text-align: center; line-height: 1.2; }
+.app:hover { background: var(--bg2); }
+.app img, .app .ph { width: 48px; height: 48px; border-radius: 12px; background: var(--bg2); display: grid; place-items: center; font-size: 22px; }
+
+.row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.field { display: flex; flex-direction: column; gap: 5px; font-size: 14px; color: var(--ink2); }
+.field input, .field select, .field textarea, .inp { background: var(--bg2); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; color: var(--ink); width: 100%; }
+textarea.inp { resize: vertical; min-height: 84px; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 11px 18px; border-radius: 12px; background: var(--brand); color: #fff; font-weight: 600; }
+:root[data-theme="dark"] .btn, .dark .btn { color: #0e1626; }
+.btn.ghost { background: var(--bg2); color: var(--ink); }
+.btn.big { width: 100%; padding: 14px; font-size: 17px; }
+.btn.red { background: var(--bad); color: #fff; }
+.switch { position: relative; width: 50px; height: 28px; flex: none; }
+.switch input { opacity: 0; position: absolute; inset: 0; cursor: pointer; z-index: 1; margin: 0; }
+.switch span { position: absolute; inset: 0; border-radius: 999px; background: var(--line); transition: .15s; }
+.switch span::after { content: ""; position: absolute; top: 3px; right: 3px; width: 22px; height: 22px; border-radius: 50%; background: #fff; transition: .15s; box-shadow: 0 1px 3px rgba(0,0,0,.25); }
+.switch input:checked + span { background: var(--tv); }
+.switch input:checked + span::after { right: 25px; }
+.toggle-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; }
+.toggle-row + .toggle-row { border-top: 1px solid var(--line); }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { padding: 8px 13px; border-radius: 999px; background: var(--bg2); font-size: 14px; border: 1px solid transparent; }
+.chip[aria-pressed="true"] { border-color: var(--brand); background: color-mix(in srgb, var(--brand) 12%, var(--card)); font-weight: 600; }
+.emojis { display: flex; flex-wrap: wrap; gap: 4px; }
+.emojis button { width: 40px; height: 40px; border-radius: 10px; font-size: 22px; }
+.emojis button[aria-pressed="true"] { background: color-mix(in srgb, var(--accent) 30%, var(--card)); }
+.drop { border: 2px dashed var(--line); border-radius: 14px; padding: 14px; text-align: center; color: var(--ink2); cursor: pointer; display: block; }
+.drop img { max-width: 100%; max-height: 200px; border-radius: 10px; display: block; margin: 0 auto; }
+
+.log { display: flex; flex-direction: column; gap: 8px; }
+.logitem { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border-radius: 12px; background: var(--bg2); font-size: 14px; }
+.logitem .t { color: var(--ink2); font-size: 12px; white-space: nowrap; margin-inline-start: auto; }
+.notes { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+.note { padding: 14px; border-radius: 14px; background: #fff6bf; color: #3b3200; box-shadow: var(--shadow); transform: rotate(-.6deg); }
+.note:nth-child(2n) { transform: rotate(.7deg); background: #d9f2ff; color: #06324a; }
+.note:nth-child(3n) { background: #ffe0ec; color: #4a0626; }
+.note img { width: 100%; border-radius: 8px; margin-top: 8px; }
+.note b { display: block; font-size: 16px; }
+
+/* login */
+.login { min-height: 80vh; display: grid; place-items: center; text-align: center; }
+.login .card { max-width: 380px; padding: 34px 26px; }
+.login .house { font-size: 64px; }
+.login h1 { font-size: 34px; margin: 6px 0 4px; }
+
+/* sheet (modal) */
+.scrim { position: fixed; inset: 0; background: rgba(10,18,35,.45); z-index: 40; display: flex; align-items: flex-end; justify-content: center; }
+@media (min-width: 700px) { .scrim { align-items: center; } }
+.sheet { background: var(--card); width: 100%; max-width: 560px; max-height: 92vh; overflow: auto; border-radius: 24px 24px 0 0; padding: 20px 18px 26px; box-shadow: 0 -10px 40px rgba(0,0,0,.2); }
+@media (min-width: 700px) { .sheet { border-radius: 24px; } }
+.sheet h2 { font-size: 22px; margin-bottom: 14px; }
+.sheet .stack > * + * { margin-top: 14px; }
+
+.toast { position: fixed; bottom: calc(18px + env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 11px 18px; border-radius: 12px; z-index: 60; font-weight: 500; box-shadow: var(--shadow); max-width: 90vw; }
+.empty { text-align: center; padding: 34px 16px; color: var(--ink2); }
+.empty .big { font-size: 44px; }
+@media (max-width: 420px) { .bar h1 { font-size: 21px; } .me span { display: none; } }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<div id="app"><div class="login"><div class="hint">טוען…</div></div></div>
+<div id="modal"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getDatabase, ref, onValue, set, update, push, serverTimestamp, query, limitToLast, remove } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+// ===== settings
+const firebaseConfig = {
+  apiKey: "AIzaSyDcjwvz5YKdA5i6sUXwpMOFdqLQXkMVFQs",
+  authDomain: "edery-home-tv.firebaseapp.com",
+  databaseURL: "https://edery-home-tv-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "edery-home-tv",
+  appId: "1:286548310974:web:b64108fa2a498137de97ef",
+};
+const SHEET_ID = "1XcCPVyQeO_gKXu6rEXNNPt1T9LfiOMqXJ3457ogLHZA";   // the living-room notes sheet
+const TEMPLATES = [
+  { emoji: "🍝", text: "ארוחת ערב מוכנה! כולם למטה" },
+  { emoji: "🌙", text: "זמן לישון, לילה טוב" },
+  { emoji: "🙋", text: "תרדו רגע למטה בבקשה" },
+  { emoji: "📚", text: "שיעורי בית קודם, אחר כך טלוויזיה" },
+  { emoji: "🚗", text: "יוצאים בעוד 10 דקות, להתארגן" },
+  { emoji: "❤️", text: "אוהבים אתכם" },
+];
+const EMOJIS = ["📢","🍝","🌙","❤️","🎉","⚽","🙋","📚","🚗","🎂","⭐","😴","🛁","🦷","☀️","🏠"];
+const TV_ICONS = ["🛋️","🌙","⚽","📺","🎮","🧸","🌈","🦄","🍿","🏠"];
+const TV_COLORS = ["#2f6fed","#9b5de5","#f5b700","#e63946","#2a9d8f","#f4845f","#1d3557"];
+const ONLINE_MS = 150_000;
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getDatabase(app);
+
+let user = null, tvs = {}, logItems = [], current = localStorage.getItem("tab") || "home";
+const unsub = [];
+const $ = (s, r = document) => r.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+// ===== theme (system / light / dark)
+function applyTheme() {
+  const t = localStorage.getItem("theme");
+  if (t) document.documentElement.dataset.theme = t; else delete document.documentElement.dataset.theme;
+  const dark = t ? t === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+  document.body.classList.toggle("dark", dark);
+}
+try { applyTheme(); } catch {}
+
+// ===== auth
+onAuthStateChanged(auth, u => {
+  user = u;
+  unsub.splice(0).forEach(f => f());
+  if (!u) return renderLogin();
+  unsub.push(onValue(ref(db, "tvs"), s => { tvs = s.val() || {}; render(); },
+    err => { renderLogin("אין לחשבון הזה הרשאה לשלט הבית (" + esc(u.email) + ")"); }));
+  unsub.push(onValue(query(ref(db, "log"), limitToLast(40)), s => {
+    logItems = Object.entries(s.val() || {}).map(([k, v]) => ({ k, ...v })).reverse();
+    if (current === "messages") render();
+  }));
+});
+
+function renderLogin(err) {
+  $("#app").innerHTML = `
+    <div class="login"><div class="card">
+      <div class="house">🏠</div>
+      <h1>שלט הבית</h1>
+      <p class="hint">כל הטלוויזיות של הבית, מכל מקום</p>
+      ${err ? `<p style="color:var(--bad)">${err}</p>` : ""}
+      <button class="btn big" id="login">כניסה עם Google</button>
+      ${user ? `<p><button class="btn ghost" id="logout">החלפת חשבון</button></p>` : ""}
+    </div></div>`;
+  $("#login").onclick = () => signInWithPopup(auth, new GoogleAuthProvider()).catch(e => toast("הכניסה נכשלה: " + e.code));
+  const lo = $("#logout"); if (lo) lo.onclick = () => signOut(auth);
+}
+
+// ===== helpers on TV data
+const approved = () => Object.entries(tvs).filter(([, t]) => t.meta?.approved)
+  .sort((a, b) => (a[1].meta.order ?? 9) - (b[1].meta.order ?? 9));
+const pending = () => Object.entries(tvs).filter(([, t]) => !t.meta?.approved && t.info);
+function stateOf(t) {
+  const s = t.status || {};
+  const online = s.lastSeen && Date.now() - s.lastSeen < ONLINE_MS;
+  if (!online) return { cls: "", text: "כבויה / לא מחוברת", online: false };
+  if (!s.screenOn) return { cls: "idle", text: "מחוברת, מסך כבוי", online: true };
+  return { cls: "on", text: "דולקת", online: true };
+}
+const iconOf = (t, pkg) => { const b = pkg && t.icons?.[pkg.replaceAll(".", "_")]; return b ? `data:image/png;base64,${b}` : ""; };
+function ago(ts) {
+  if (!ts) return "";
+  const m = Math.round((Date.now() - ts) / 60000);
+  if (m < 1) return "עכשיו"; if (m < 60) return `לפני ${m} דק׳`;
+  const h = Math.round(m / 60); if (h < 24) return `לפני ${h} שע׳`;
+  return new Date(ts).toLocaleDateString("he-IL");
+}
+const tvColor = t => t.meta?.color || "#1d3557";
+const tvName = t => t.meta?.name || t.info?.model || "טלוויזיה";
+const tvIcon = t => t.meta?.icon || "📺";
+
+// ===== commands
+async function cmd(uid, type, args = {}, quiet) {
+  const id = push(ref(db, "ids")).key;
+  await set(ref(db, `tvs/${uid}/in/cmd`), { id, type, ...args, ts: Date.now() });
+  if (!quiet) waitAck(uid, id, type);
+}
+function waitAck(uid, id, type) {
+  let done = false;
+  const off = onValue(ref(db, `tvs/${uid}/ack`), s => {
+    const a = s.val();
+    if (a?.id !== id) return;
+    done = true; off();
+    toast(a.ok ? `✓ ${tvName(tvs[uid])}: בוצע` : `✗ ${tvName(tvs[uid])}: ${a.error}`);
+  });
+  setTimeout(() => { if (!done) { off(); toast(`⏳ ${tvName(tvs[uid])} לא ענתה. אולי היא כבויה?`); } }, 15000);
+}
+const setConfig = (uid, path, value) => set(ref(db, `tvs/${uid}/in/config/${path}`), value);
+const log = (entry) => push(ref(db, "log"), { at: serverTimestamp(), by: user.displayName || user.email, ...entry });
+
+// ===== render
+function render() {
+  if (!user) return;
+  const list = approved();
+  if (current !== "home" && current !== "messages" && current !== "notes" && !tvs[current]) current = "home";
+  const tab = (id, em, label, dot) => `<button class="tab" role="tab" aria-selected="${current === id}" data-tab="${id}">${dot ?? ""}<span class="em">${em}</span>${esc(label)}</button>`;
+  $("#app").innerHTML = `
+    <header class="top">
+      <div class="bar">
+        <h1><span class="house">🏠</span>שלט הבית</h1>
+        <div class="me">${user.photoURL ? `<img src="${esc(user.photoURL)}" alt="">` : ""}<span>${esc(user.displayName || "")}</span></div>
+        <button class="iconbtn" id="theme" title="מצב תצוגה" aria-label="מצב תצוגה">🌓</button>
+        <button class="iconbtn" id="logout" title="יציאה" aria-label="יציאה">⎋</button>
+      </div>
+      <nav class="tabs" role="tablist">
+        ${tab("home", "🏡", "כל הבית")}
+        ${list.map(([uid, t]) => tab(uid, tvIcon(t), tvName(t), `<span class="dot ${stateOf(t).cls}"></span>`)).join("")}
+        ${tab("messages", "💬", "הודעות")}
+        ${tab("notes", "📝", "פתקים")}
+      </nav>
+    </header>
+    <main id="view">${current === "home" ? viewHome() : current === "messages" ? viewMessages() : current === "notes" ? viewNotes() : viewTv(current)}</main>`;
+  $("#logout").onclick = () => signOut(auth);
+  $("#theme").onclick = () => {
+    const order = [null, "light", "dark"], now = localStorage.getItem("theme");
+    const next = order[(order.indexOf(now) + 1) % 3];
+    next ? localStorage.setItem("theme", next) : localStorage.removeItem("theme");
+    applyTheme(); toast(next === "light" ? "☀️ בהיר" : next === "dark" ? "🌙 כהה" : "🌓 לפי המכשיר");
+  };
+  if (current === "notes") loadNotes();
+}
+
+function tvCard(uid, t) {
+  const st = stateOf(t), s = t.status || {};
+  const icon = iconOf(t, s.app);
+  return `
+  <article class="card tvcard" style="--tv:${tvColor(t)}">
+    <div class="tvhead">
+      <div class="tvicon">${tvIcon(t)}</div>
+      <div style="flex:1">
+        <div class="tvname">${esc(tvName(t))}</div>
+        <div class="state"><span class="dot ${st.cls}"></span>${st.text}${!st.online && s.lastSeen ? ` · נראתה ${ago(s.lastSeen)}` : ""}</div>
+      </div>
+      <button class="iconbtn" data-tab="${uid}" aria-label="פתח">‹</button>
+    </div>
+    <div class="playing">${st.online && s.screenOn && s.app
+      ? `${icon ? `<img src="${icon}" alt="">` : "▶️"}<span>עכשיו: <b>${esc(s.appLabel || s.app)}</b></span>`
+      : `<span class="hint">${st.online ? "לא מנגנת כלום" : "—"}</span>`}</div>
+    <div class="pills">
+      ${s.locked ? `<span class="pill lock">🔒 נעולה</span>` : ""}
+      ${s.bedtimeNow ? `<span class="pill moon">🌙 שעת שינה</span>` : ""}
+      ${t.in?.config?.bedtime?.on && !s.bedtimeNow ? `<span class="pill">🌙 שינה ב-${esc(t.in.config.bedtime.from)}</span>` : ""}
+      ${st.online ? `<span class="pill">🔊 ${s.muted ? "מושתק" : s.volume + "/" + s.maxVolume}</span>` : ""}
+    </div>
+    <div class="quick">
+      <button class="act" data-do="msg" data-uid="${uid}"><span class="ic">📢</span>הודעה</button>
+      <button class="act ${t.in?.config?.lock?.on ? "on" : ""}" data-do="lock" data-uid="${uid}"><span class="ic">${t.in?.config?.lock?.on ? "🔓" : "🔒"}</span>${t.in?.config?.lock?.on ? "שחרור" : "נעילה"}</button>
+      <button class="act" data-do="home" data-uid="${uid}" ${st.online ? "" : "disabled"}><span class="ic">🏠</span>מסך בית</button>
+      <button class="act" data-do="mute" data-uid="${uid}" ${st.online ? "" : "disabled"}><span class="ic">${s.muted ? "🔊" : "🔇"}</span>${s.muted ? "קול" : "השתק"}</button>
+    </div>
+  </article>`;
+}
+
+function viewHome() {
+  const list = approved(), pend = pending();
+  return `
+    ${pend.length ? `<section class="section"><h2>✨ טלוויזיה חדשה מחכה לאישור</h2><div class="grid tvs">${pend.map(([uid, t]) => `
+      <div class="card"><div class="tvhead"><div class="tvicon">📺</div><div><div class="tvname">${esc(t.info.model)}</div>
+      <div class="state">IP ${esc(t.info.ip)} · Android ${esc(t.info.android)}</div></div></div>
+      <div class="row" style="margin-top:12px"><button class="btn" data-do="approve" data-uid="${uid}">אישור והגדרה</button>
+      <button class="btn ghost" data-do="reject" data-uid="${uid}">לא שלי</button></div></div>`).join("")}</div></section>` : ""}
+    <section class="section">
+      <div class="row" style="justify-content:space-between"><h2>🏡 כל הבית</h2>
+        <button class="btn" data-do="msg" data-uid="*">📢 הודעה לכולם</button></div>
+      ${list.length ? `<div class="grid tvs">${list.map(([uid, t]) => tvCard(uid, t)).join("")}</div>`
+        : `<div class="card empty"><div class="big">📺</div>עוד אין טלוויזיות.<br>כשהאפליקציה "שלט הבית" תותקן על טלוויזיה, היא תופיע כאן לאישור.</div>`}
+    </section>
+    ${list.length ? `<section class="section"><h2>⚡ שליחה מהירה לכולם</h2>
+      <div class="chips">${TEMPLATES.map((m, i) => `<button class="chip" data-do="quick" data-i="${i}">${m.emoji} ${esc(m.text)}</button>`).join("")}</div>
+      <div class="row" style="margin-top:14px">
+        <button class="btn ghost" data-do="lockall">🔒 נעל את כולן</button>
+        <button class="btn ghost" data-do="unlockall">🔓 שחרר את כולן</button>
+      </div></section>` : ""}`;
+}
+
+function viewTv(uid) {
+  const t = tvs[uid], st = stateOf(t), s = t.status || {}, info = t.info || {}, cfg = t.in?.config || {};
+  const bt = cfg.bedtime || {}, lock = cfg.lock || {};
+  const icon = iconOf(t, s.app);
+  const off = st.online ? "" : "disabled";
+  const apps = (info.apps || []).slice().sort((a, b) => a.label.localeCompare(b.label, "he"));
+  const skip = bt.skipUntil && bt.skipUntil > Date.now();
+  return `<div style="--tv:${tvColor(t)}">
+    <section class="card hero">
+      <div>
+        <div class="tvhead">
+          <div class="tvicon">${tvIcon(t)}</div>
+          <div><div class="tvname">${esc(tvName(t))}</div>
+          <div class="state"><span class="dot ${st.cls}"></span>${st.text}${s.lastSeen ? ` · עדכון ${ago(s.lastSeen)}` : ""}</div></div>
+        </div>
+        <div class="playing">${st.online && s.screenOn && s.app
+          ? `${icon ? `<img src="${icon}" alt="">` : "▶️"}<span>עכשיו: <b>${esc(s.appLabel || s.app)}</b></span>`
+          : `<span class="hint">${st.online ? "לא מנגנת כלום" : "הטלוויזיה כבויה או לא מחוברת לרשת"}</span>`}</div>
+        <div class="pills">
+          ${s.locked ? `<span class="pill lock">🔒 נעולה</span>` : ""}
+          ${s.bedtimeNow ? `<span class="pill moon">🌙 שעת שינה</span>` : ""}
+          ${info.model ? `<span class="pill">${esc(info.model)}</span>` : ""}
+        </div>
+      </div>
+      <div>
+        <div class="vol"><span class="ic" style="font-size:22px">🔈</span>
+          <input type="range" min="0" max="${s.maxVolume || 100}" value="${s.volume || 0}" id="vol" ${off} aria-label="עוצמת קול">
+          <span class="num" id="volnum">${s.volume ?? "–"}</span>
+          <button class="iconbtn" data-do="mute" data-uid="${uid}" ${off} aria-label="השתקה">${s.muted ? "🔊" : "🔇"}</button></div>
+        <div class="grid acts" style="margin-top:14px">
+          <button class="act" data-do="msg" data-uid="${uid}"><span class="ic">📢</span>הודעה</button>
+          <button class="act ${lock.on ? "on" : ""}" data-do="lock" data-uid="${uid}"><span class="ic">${lock.on ? "🔓" : "🔒"}</span>${lock.on ? "שחרר נעילה" : "נעל עכשיו"}</button>
+          <button class="act" data-do="home" data-uid="${uid}" ${off}><span class="ic">🏠</span>מסך בית</button>
+          <button class="act" data-do="pause" data-uid="${uid}" ${off}><span class="ic">⏸️</span>עצור</button>
+          <button class="act" data-do="play" data-uid="${uid}" ${off}><span class="ic">▶️</span>המשך</button>
+          <button class="act" data-do="screenOff" data-uid="${uid}" ${off} ${info.canScreenOff ? "" : 'title="לא הופעל בטלוויזיה הזו"'}><span class="ic">💤</span>כבה מסך</button>
+          <button class="act" data-do="screenOn" data-uid="${uid}" ${off}><span class="ic">☀️</span>הדלק מסך</button>
+          <button class="act" data-do="url" data-uid="${uid}" ${off}><span class="ic">🌐</span>פתח אתר</button>
+        </div>
+      </div>
+    </section>
+
+    ${(info.inputs || []).length ? `<section class="section"><h2>📺 כניסות HDMI</h2><div class="chips">
+      ${info.inputs.map(i => `<button class="chip" data-do="hdmi" data-uid="${uid}" data-input="${esc(i.id)}" ${off}>📺 ${esc((t.meta?.inputNames || {})[i.id.replace(/[.#$/[\]]/g, "_")] || i.label)}</button>`).join("")}
+    </div></section>` : ""}
+
+    <section class="section"><h2>🌙 נעילה ושעת שינה</h2>
+      <div class="card">
+        <div class="toggle-row"><div><b>נעילה עכשיו</b><div class="hint">המסך יוצג נעול עד שתשחרר. גם אחרי כיבוי והדלקה.</div></div>
+          <label class="switch"><input type="checkbox" data-cfg="lock" data-uid="${uid}" ${lock.on ? "checked" : ""}><span></span></label></div>
+        <div class="field" style="margin:4px 0 8px"><span>הטקסט על מסך הנעילה</span>
+          <input class="inp" data-cfgtext="lock/text" data-uid="${uid}" value="${esc(lock.text || "המסך נעול 🔒")}"></div>
+        <div class="toggle-row"><div><b>שעת שינה קבועה</b><div class="hint">כל יום, 10 דקות לפני יופיע אזהרה על המסך</div></div>
+          <label class="switch"><input type="checkbox" data-cfg="bedtime" data-uid="${uid}" ${bt.on ? "checked" : ""}><span></span></label></div>
+        <div class="row" style="margin-top:6px">
+          <label class="field" style="flex:1">מ-<input type="time" class="inp" data-cfgtext="bedtime/from" data-uid="${uid}" value="${esc(bt.from || "21:00")}"></label>
+          <label class="field" style="flex:1">עד<input type="time" class="inp" data-cfgtext="bedtime/to" data-uid="${uid}" value="${esc(bt.to || "07:00")}"></label>
+        </div>
+        <div class="field" style="margin-top:10px"><span>הטקסט בשעת שינה</span>
+          <input class="inp" data-cfgtext="bedtime/text" data-uid="${uid}" value="${esc(bt.text || "לילה טוב 🌙 נתראה מחר")}"></div>
+        <div class="row" style="margin-top:12px">
+          ${skip ? `<span class="pill moon">פתוח עד ${new Date(bt.skipUntil).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" })}</span>
+            <button class="btn ghost" data-do="skip" data-min="0" data-uid="${uid}">בטל הארכה</button>`
+          : `<button class="btn ghost" data-do="skip" data-min="30" data-uid="${uid}">⏰ עוד חצי שעה</button>
+             <button class="btn ghost" data-do="skip" data-min="60" data-uid="${uid}">⏰ עוד שעה</button>`}
+        </div>
+      </div>
+    </section>
+
+    <section class="section"><h2>▶️ פתח אפליקציה</h2>
+      ${apps.length ? `<div class="card"><div class="grid apps">${apps.map(a => {
+        const ic = iconOf(t, a.pkg);
+        return `<button class="app" data-do="open" data-uid="${uid}" data-pkg="${esc(a.pkg)}" ${off}>${ic ? `<img src="${ic}" alt="">` : `<span class="ph">📦</span>`}${esc(a.label)}</button>`;
+      }).join("")}</div></div>` : `<div class="card empty">הרשימה תגיע כשהטלוויזיה תתחבר</div>`}
+    </section>
+
+    <section class="section"><h2>⚙️ הגדרות הטלוויזיה</h2>
+      <div class="card stack">
+        <label class="field">שם<input class="inp" data-meta="name" data-uid="${uid}" value="${esc(tvName(t))}"></label>
+        <div class="field" style="margin-top:12px">אייקון<div class="emojis">${TV_ICONS.map(e => `<button data-do="meta" data-k="icon" data-v="${e}" data-uid="${uid}" aria-pressed="${tvIcon(t) === e}">${e}</button>`).join("")}</div></div>
+        <div class="field" style="margin-top:12px">צבע<div class="chips">${TV_COLORS.map(c => `<button class="chip" data-do="meta" data-k="color" data-v="${c}" data-uid="${uid}" aria-pressed="${tvColor(t) === c}" style="background:${c};width:36px;height:36px;padding:0" aria-label="צבע"></button>`).join("")}</div></div>
+        <div class="row" style="margin-top:16px">
+          <button class="btn ghost" data-do="refresh" data-uid="${uid}" ${off}>🔄 רענן רשימת אפליקציות</button>
+          <button class="btn ghost" data-do="forget" data-uid="${uid}">🗑️ הסר מהשלט</button>
+        </div>
+        <p class="hint">IP ${esc(info.ip || "—")} · Android ${esc(info.android || "—")} · גרסת סוכן ${esc(info.version || "—")}</p>
+      </div>
+    </section>
+  </div>`;
+}
+
+function viewMessages() {
+  return `
+    <section class="section">
+      <div class="row" style="justify-content:space-between"><h2>💬 הודעות</h2><button class="btn" data-do="msg" data-uid="*">📢 הודעה חדשה</button></div>
+      <p class="hint">ההודעה קופצת מעל כל מה שמוצג בטלוויזיה (יוטיוב, נטפליקס, פרטנר) ונעלמת לבד.</p>
+    </section>
+    <section class="section"><h2>⚡ תבניות מוכנות</h2>
+      <div class="chips">${TEMPLATES.map((m, i) => `<button class="chip" data-do="tmpl" data-i="${i}">${m.emoji} ${esc(m.text)}</button>`).join("")}</div>
+    </section>
+    <section class="section"><h2>🕘 היסטוריה</h2>
+      ${logItems.length ? `<div class="log">${logItems.map(l => `
+        <div class="logitem"><span style="font-size:20px">${esc(l.emoji || "•")}</span>
+          <div><b>${esc(l.text || l.type)}</b><div class="hint">${esc(l.to || "")}${l.image ? " · 🖼️ עם תמונה" : ""}</div></div>
+          <span class="t">${ago(l.at)}</span></div>`).join("")}</div>`
+        : `<div class="card empty"><div class="big">💬</div>עוד לא נשלחו הודעות</div>`}
+    </section>`;
+}
+
+function viewNotes() {
+  return `
+    <section class="section">
+      <h2>📝 הפתקים במקרר של הסלון</h2>
+      <p class="hint">הפתקים במסך הבית בסלון נקראים מגיליון Google. שינוי בגיליון מופיע בטלוויזיה תוך 2 דקות.</p>
+      <div class="row" style="margin-top:12px">
+        <a class="btn" href="https://docs.google.com/spreadsheets/d/${SHEET_ID}/edit" target="_blank" rel="noopener">📄 פתח את הגיליון</a>
+        <button class="btn ghost" data-do="notesreload">🔄 רענן</button>
+      </div>
+    </section>
+    <section class="section"><h2>🖼️ הוספת תמונה לפתק</h2>
+      <div class="card">
+        <label class="drop" id="noteDrop"><input type="file" accept="image/*" id="noteFile" hidden>
+          <div id="notePrev">📷 לחץ לבחירת תמונה מהטלפון או מהמחשב</div></label>
+        <div id="noteOut" class="hide" style="margin-top:12px">
+          <div class="field">הדבק את זה בעמודת "תמונה" בגיליון:
+            <div class="row"><input class="inp" id="noteCode" readonly style="flex:1;direction:ltr"><button class="btn" id="copyCode">העתק</button></div></div>
+        </div>
+      </div>
+    </section>
+    <section class="section"><h2>👀 מה מוצג עכשיו</h2><div id="notesList" class="grid notes"><div class="hint">טוען…</div></div></section>`;
+}
+
+// ===== sheet notes preview (same CSV the TV reads)
+function parseCsv(t) {
+  const rows = []; let row = [], f = "", q = false;
+  for (let i = 0; i < t.length; i++) {
+    const c = t[i];
+    if (q) { if (c === '"') { if (t[i + 1] === '"') { f += '"'; i++; } else q = false; } else f += c; }
+    else if (c === '"') q = true; else if (c === ",") { row.push(f); f = ""; }
+    else if (c === "\n") { row.push(f); rows.push(row); row = []; f = ""; } else if (c !== "\r") f += c;
+  }
+  if (f || row.length) { row.push(f); rows.push(row); }
+  return rows;
+}
+async function loadNotes() {
+  const box = $("#notesList"); if (!box) return;
+  try {
+    const csv = await fetch(`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&headers=1&t=${Date.now()}`).then(r => r.text());
+    const rows = parseCsv(csv).slice(1).filter(r => (r[1] || r[2] || "").trim());
+    if (!rows.length) { box.innerHTML = `<div class="hint">אין פתקים בגיליון</div>`; return; }
+    box.innerHTML = rows.map(r => `<div class="note"><b>${esc(r[0])} ${esc(r[1])}</b>${esc(r[2])}
+      ${r[5] || r[6] ? `<div class="hint" style="color:inherit;opacity:.7;font-size:12px">${esc(r[5])}${r[6] ? " – " + esc(r[6]) : ""}</div>` : ""}
+      <div data-img="${esc((r[3] || "").trim())}"></div></div>`).join("");
+    box.querySelectorAll("[data-img]").forEach(async el => {
+      const v = el.dataset.img; if (!v) return;
+      const src = v.startsWith("img:") ? await imageData(v.slice(4)) : /^https?:/.test(v) && !/photos\.app\.goo\.gl|photos\.google/.test(v) ? v : "";
+      if (src) el.innerHTML = `<img src="${esc(src)}" alt="">`; else el.innerHTML = `<div class="hint" style="color:inherit">🖼️ תמונה</div>`;
+    });
+  } catch { box.innerHTML = `<div class="hint">לא הצלחתי לקרוא את הגיליון</div>`; }
+}
+const imageData = id => fetch(`${firebaseConfig.databaseURL}/images/${id}.json`).then(r => r.json()).then(v => v?.data || "").catch(() => "");
+
+// ===== images: shrink in the browser, store in the database
+function shrink(file, max = 1100, q = .78) {
+  return new Promise((ok, bad) => {
+    const img = new Image();
+    img.onload = () => {
+      const s = Math.min(1, max / Math.max(img.width, img.height));
+      const c = document.createElement("canvas");
+      c.width = Math.round(img.width * s); c.height = Math.round(img.height * s);
+      c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(img.src);
+      ok(c.toDataURL("image/jpeg", q));
+    };
+    img.onerror = bad;
+    img.src = URL.createObjectURL(file);
+  });
+}
+async function uploadImage(dataUrl) {
+  const r = push(ref(db, "images"));
+  await set(r, { data: dataUrl, at: serverTimestamp() });
+  return r.key;
+}
+
+// ===== message composer (bottom sheet)
+function openComposer(target, preset = {}) {
+  const list = approved();
+  const chosen = new Set(target === "*" ? list.map(([u]) => u) : [target]);
+  let emoji = preset.emoji || "📢", image = "";
+  const m = $("#modal");
+  m.innerHTML = `<div class="scrim" id="scrim"><div class="sheet" role="dialog" aria-label="הודעה חדשה"><div class="stack">
+    <h2>📢 הודעה לטלוויזיה</h2>
+    <div class="field">למי<div class="chips" id="targets">${list.map(([u, t]) => `<button class="chip" data-u="${u}" aria-pressed="${chosen.has(u)}">${tvIcon(t)} ${esc(tvName(t))}</button>`).join("")}</div></div>
+    <div class="field">אימוג׳י<div class="emojis" id="emo">${EMOJIS.map(e => `<button data-e="${e}" aria-pressed="${e === emoji}">${e}</button>`).join("")}</div></div>
+    <label class="field">ההודעה<textarea class="inp" id="mtext" maxlength="200" placeholder="מה לכתוב על המסך?">${esc(preset.text || "")}</textarea></label>
+    <label class="drop"><input type="file" accept="image/*" id="mfile" hidden><div id="mprev">🖼️ הוספת תמונה (לא חובה)</div></label>
+    <div class="row">
+      <label class="field" style="flex:1">כמה זמן על המסך<select class="inp" id="msec"><option value="10">10 שניות</option><option value="20" selected>20 שניות</option><option value="60">דקה</option><option value="300">5 דקות</option></select></label>
+      <label class="field" style="flex:1">מיקום<select class="inp" id="mpos"><option value="top">למעלה</option><option value="center">באמצע המסך</option></select></label>
+    </div>
+    <div class="toggle-row"><b>🔔 עם צליל</b><label class="switch" style="--tv:var(--brand)"><input type="checkbox" id="msnd" checked><span></span></label></div>
+    <div class="row"><button class="btn big" id="msend" style="flex:1">שליחה</button><button class="btn ghost" id="mclose">ביטול</button></div>
+  </div></div></div>`;
+  const close = () => m.innerHTML = "";
+  $("#scrim").onclick = e => { if (e.target.id === "scrim") close(); };
+  $("#mclose").onclick = close;
+  $("#targets").onclick = e => { const b = e.target.closest("[data-u]"); if (!b) return; const u = b.dataset.u;
+    chosen.has(u) ? chosen.delete(u) : chosen.add(u); b.setAttribute("aria-pressed", chosen.has(u)); };
+  $("#emo").onclick = e => { const b = e.target.closest("[data-e]"); if (!b) return; emoji = emoji === b.dataset.e ? "" : b.dataset.e;
+    $("#emo").querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x.dataset.e === emoji)); };
+  $("#mfile").onchange = async e => {
+    const f = e.target.files[0]; if (!f) return;
+    image = await shrink(f, 900, .75);
+    $("#mprev").innerHTML = `<img src="${image}" alt="">`;
+  };
+  $("#msend").onclick = async () => {
+    const text = $("#mtext").value.trim();
+    if (!text && !image) return toast("כתוב משהו או הוסף תמונה");
+    if (!chosen.size) return toast("בחר לפחות טלוויזיה אחת");
+    $("#msend").disabled = true; $("#msend").textContent = "שולח…";
+    try {
+      const imgRef = image ? "img:" + await uploadImage(image) : "";
+      const args = { text, emoji, image: imgRef, seconds: +$("#msec").value, position: $("#mpos").value, sound: $("#msnd").checked, from: user.displayName?.split(" ")[0] || "" };
+      await Promise.all([...chosen].map(u => cmd(u, "message", args)));
+      log({ type: "message", emoji, text, image: !!imgRef, to: [...chosen].map(u => tvName(tvs[u])).join(", ") });
+      close(); toast("📢 נשלח");
+    } catch (e) { toast("השליחה נכשלה"); $("#msend").disabled = false; $("#msend").textContent = "שליחה"; }
+  };
+  setTimeout(() => $("#mtext").focus(), 50);
+}
+
+function openApprove(uid) {
+  const t = tvs[uid]; let icon = "📺", color = TV_COLORS[approved().length % TV_COLORS.length];
+  const m = $("#modal");
+  m.innerHTML = `<div class="scrim" id="scrim"><div class="sheet"><div class="stack">
+    <h2>✨ טלוויזיה חדשה</h2><p class="hint">${esc(t.info.model)} · IP ${esc(t.info.ip)}</p>
+    <label class="field">איך לקרוא לה?<input class="inp" id="aname" placeholder="למשל: הסלון, החדר של רועי"></label>
+    <div class="field">אייקון<div class="emojis" id="aicon">${TV_ICONS.map(e => `<button data-e="${e}" aria-pressed="${e === icon}">${e}</button>`).join("")}</div></div>
+    <div class="field">צבע<div class="chips" id="acolor">${TV_COLORS.map(c => `<button class="chip" data-c="${c}" aria-pressed="${c === color}" style="background:${c};width:36px;height:36px;padding:0" aria-label="צבע"></button>`).join("")}</div></div>
+    <div class="row"><button class="btn big" id="aok" style="flex:1">הוסף לשלט</button><button class="btn ghost" id="aclose">ביטול</button></div>
+  </div></div></div>`;
+  const close = () => m.innerHTML = "";
+  $("#aclose").onclick = close;
+  $("#aicon").onclick = e => { const b = e.target.closest("[data-e]"); if (!b) return; icon = b.dataset.e; $("#aicon").querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x === b)); };
+  $("#acolor").onclick = e => { const b = e.target.closest("[data-c]"); if (!b) return; color = b.dataset.c; $("#acolor").querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x === b)); };
+  $("#aok").onclick = async () => {
+    const name = $("#aname").value.trim(); if (!name) return toast("תן לה שם");
+    await set(ref(db, `tvs/${uid}/meta`), { approved: true, name, icon, color, order: approved().length });
+    close(); toast("✓ " + name + " נוספה");
+  };
+  setTimeout(() => $("#aname").focus(), 50);
+}
+
+function askUrl(uid) {
+  const m = $("#modal");
+  m.innerHTML = `<div class="scrim" id="scrim"><div class="sheet"><div class="stack">
+    <h2>🌐 פתח אתר בטלוויזיה</h2>
+    <div class="chips">${[["ONE", "https://www.one.co.il/"], ["ספורט 5", "https://www.sport5.co.il/"], ["ynet", "https://www.ynet.co.il/"], ["N12", "https://www.mako.co.il/news"]]
+      .map(([n, u]) => `<button class="chip" data-u="${u}">${n}</button>`).join("")}</div>
+    <input class="inp" id="uurl" placeholder="https://" style="direction:ltr" inputmode="url">
+    <div class="row"><button class="btn big" id="uok" style="flex:1">פתח</button><button class="btn ghost" id="uclose">ביטול</button></div>
+  </div></div></div>`;
+  const close = () => m.innerHTML = "";
+  $("#uclose").onclick = close;
+  m.querySelectorAll("[data-u]").forEach(b => b.onclick = () => $("#uurl").value = b.dataset.u);
+  $("#uok").onclick = () => { let u = $("#uurl").value.trim(); if (!u) return; if (!/^https?:\/\//.test(u)) u = "https://" + u; cmd(uid, "url", { url: u }); close(); };
+}
+
+// ===== one delegated click handler for everything
+document.addEventListener("click", async e => {
+  const tabBtn = e.target.closest("[data-tab]");
+  if (tabBtn && !e.target.closest("#modal")) { current = tabBtn.dataset.tab; localStorage.setItem("tab", current); render(); scrollTo({ top: 0 }); return; }
+  const b = e.target.closest("[data-do]"); if (!b || b.disabled) return;
+  const uid = b.dataset.uid, t = tvs[uid], d = b.dataset.do;
+  switch (d) {
+    case "msg": return openComposer(uid);
+    case "tmpl": return openComposer("*", TEMPLATES[+b.dataset.i]);
+    case "quick": {
+      const m = TEMPLATES[+b.dataset.i], list = approved();
+      await Promise.all(list.map(([u]) => cmd(u, "message", { ...m, seconds: 30, sound: true, from: user.displayName?.split(" ")[0] || "" }, true)));
+      log({ type: "message", ...m, to: "כל הבית" }); return toast("📢 נשלח לכל הבית");
+    }
+    case "lock": {
+      const on = !t.in?.config?.lock?.on;
+      await setConfig(uid, "lock/on", on); if (on && !t.in?.config?.lock?.text) await setConfig(uid, "lock/text", "המסך נעול 🔒");
+      log({ type: "lock", emoji: on ? "🔒" : "🔓", text: on ? "נעילה" : "שחרור נעילה", to: tvName(t) });
+      return toast(on ? `🔒 ${tvName(t)} ננעלה` : `🔓 ${tvName(t)} שוחררה`);
+    }
+    case "lockall": case "unlockall": {
+      const on = d === "lockall";
+      await Promise.all(approved().map(([u]) => setConfig(u, "lock/on", on)));
+      log({ type: "lock", emoji: on ? "🔒" : "🔓", text: on ? "נעילת כל הבית" : "שחרור כל הבית", to: "כל הבית" });
+      return toast(on ? "🔒 כל הטלוויזיות ננעלו" : "🔓 כל הטלוויזיות שוחררו");
+    }
+    case "mute": return cmd(uid, "mute", { on: !t.status?.muted });
+    case "home": case "pause": case "play": case "screenOff": case "screenOn": case "refresh": return cmd(uid, d);
+    case "open": return cmd(uid, "open", { pkg: b.dataset.pkg });
+    case "hdmi": return cmd(uid, "hdmi", { input: b.dataset.input });
+    case "url": return askUrl(uid);
+    case "skip": {
+      const min = +b.dataset.min;
+      await setConfig(uid, "bedtime/skipUntil", min ? Date.now() + min * 60000 : 0);
+      if (min) log({ type: "bedtime", emoji: "⏰", text: `שעת שינה נדחתה ב-${min} דק׳`, to: tvName(t) });
+      return toast(min ? `⏰ פתוח לעוד ${min} דקות` : "ההארכה בוטלה");
+    }
+    case "meta": await update(ref(db, `tvs/${uid}/meta`), { [b.dataset.k]: b.dataset.v }); return;
+    case "approve": return openApprove(uid);
+    case "reject": if (await ask("למחוק את הטלוויזיה הזו מהרשימה?", "מחק")) await remove(ref(db, `tvs/${uid}`)); return;
+    case "forget":
+      if (await ask(`להסיר את "${tvName(t)}" מהשלט? היא תחזור לרשימת האישור אם האפליקציה עדיין מותקנת.`, "הסר")) { await remove(ref(db, `tvs/${uid}/meta`)); current = "home"; render(); }
+      return;
+    case "notesreload": return loadNotes();
+  }
+});
+
+// switches + text fields (config) — saved on change
+document.addEventListener("change", async e => {
+  const el = e.target;
+  if (el.dataset.cfg) {
+    const uid = el.dataset.uid, t = tvs[uid];
+    await setConfig(uid, `${el.dataset.cfg}/on`, el.checked);
+    if (el.dataset.cfg === "bedtime" && el.checked && !t.in?.config?.bedtime?.from)
+      await update(ref(db, `tvs/${uid}/in/config/bedtime`), { from: "21:00", to: "07:00" });
+    log({ type: el.dataset.cfg, emoji: el.dataset.cfg === "lock" ? (el.checked ? "🔒" : "🔓") : "🌙",
+      text: el.dataset.cfg === "lock" ? (el.checked ? "נעילה" : "שחרור נעילה") : (el.checked ? "שעת שינה הופעלה" : "שעת שינה כובתה"), to: tvName(t) });
+    return toast("✓ נשמר");
+  }
+  if (el.dataset.cfgtext) { await setConfig(el.dataset.uid, el.dataset.cfgtext, el.value); return toast("✓ נשמר"); }
+  if (el.dataset.meta) { await update(ref(db, `tvs/${el.dataset.uid}/meta`), { [el.dataset.meta]: el.value.trim() }); return toast("✓ נשמר"); }
+  if (el.id === "noteFile" && el.files[0]) {
+    $("#notePrev").textContent = "מעלה…";
+    const data = await shrink(el.files[0], 1100, .78);
+    const key = await uploadImage(data);
+    $("#notePrev").innerHTML = `<img src="${data}" alt="">`;
+    $("#noteOut").classList.remove("hide");
+    $("#noteCode").value = "img:" + key;
+    $("#copyCode").onclick = () => navigator.clipboard.writeText("img:" + key).then(() => toast("📋 הועתק. הדבק בגיליון"));
+  }
+});
+
+// volume slider: send when the finger lifts
+document.addEventListener("input", e => { if (e.target.id === "vol") $("#volnum").textContent = e.target.value; });
+document.addEventListener("change", e => { if (e.target.id === "vol") cmd(current, "volume", { level: +e.target.value }); });
+
+/** In-page yes/no sheet (browser confirm() dialogs look bad and block the page). */
+function ask(text, yes) {
+  return new Promise(ok => {
+    const m = $("#modal");
+    m.innerHTML = `<div class="scrim" id="scrim"><div class="sheet"><div class="stack">
+      <h2>${esc(text)}</h2>
+      <div class="row"><button class="btn red big" id="qyes" style="flex:1">${esc(yes)}</button><button class="btn ghost" id="qno">ביטול</button></div>
+    </div></div></div>`;
+    const done = v => { m.innerHTML = ""; ok(v); };
+    $("#qyes").onclick = () => done(true);
+    $("#qno").onclick = () => done(false);
+    $("#scrim").onclick = e => { if (e.target.id === "scrim") done(false); };
+  });
+}
+
+let toastTimer;
+function toast(text) {
+  document.querySelector(".toast")?.remove();
+  const el = document.createElement("div"); el.className = "toast"; el.textContent = text; el.setAttribute("role", "status");
+  document.body.appendChild(el); clearTimeout(toastTimer); toastTimer = setTimeout(() => el.remove(), 3200);
+}
+// refresh "x minutes ago" and online dots
+setInterval(() => { if (user && !$("#modal").innerHTML && !document.activeElement?.matches("input,textarea,select")) render(); }, 30000);
+</script>
+</body>
+</html>
