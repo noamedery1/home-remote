@@ -639,12 +639,10 @@ function viewTv(uid) {
         ${(info.inputs || []).length ? `<section class="card pad"><h2>כניסות HDMI</h2><div class="chips">
           ${info.inputs.map(i => `<button class="chip" data-do="hdmi" data-uid="${uid}" data-input="${esc(i.id)}" ${off}>${icon("plug", 18)}${esc((t.meta?.inputNames || {})[i.id.replace(/[.#$/[\]]/g, "_")] || i.label)}</button>`).join("")}
         </div></section>` : ""}
+        ${info.canStyle ? homeStyleCard(t, uid, off) : ""}
         <section class="card pad"><h2>הגדרות</h2>
           <label class="field">שם<input class="inp" data-meta="name" data-uid="${uid}" value="${esc(tvName(t))}"></label>
           <div class="field" style="margin-top:14px">צבע<div class="swatches">${TV_COLORS.map(c => swatch(c, tvColor(t) === c, `data-do="meta" data-k="color" data-v="${c}" data-uid="${uid}"`)).join("")}</div></div>
-          ${info.canWallpaper ? `<div class="field" style="margin-top:14px">רקע מסך הבית<div class="btnrow">
-            <label class="btn sm"><input type="file" accept="image/*" class="vh" data-wp="${uid}" ${off}>${icon("upload", 18)}החלפת תמונה</label>
-            <button class="btn sm" data-do="wpReset" data-uid="${uid}" ${off}>${icon("refresh", 18)}התמונה המקורית</button></div></div>` : ""}
           <div class="btnrow" style="margin-top:16px">
             <button class="btn sm" data-do="refresh" data-uid="${uid}" ${off}>${icon("refresh", 18)}רענון רשימת האפליקציות</button>
             <button class="btn sm danger" data-do="forget" data-uid="${uid}">${icon("trash", 18)}הסרה מהשלט</button>
@@ -654,6 +652,26 @@ function viewTv(uid) {
       </div>
     </div>
   </div>`;
+}
+// home-screen look, sent to the TV's home screen through the agent ("style" command); last choice kept in meta/style
+const SIZES = [[0.8, "קטן"], [1, "רגיל"], [1.2, "גדול"], [1.4, "ענק"]];
+const POSITIONS = [["top", "למעלה"], ["center", "באמצע"], ["bottom", "למטה"]];
+function homeStyleCard(t, uid, off) {
+  const st = t.meta?.style || {}, size = st.size ?? 1, pos = st.pos || "center";
+  const chips = (list, k, cur) => `<div class="chips">${list.map(([v, l]) =>
+    `<button class="chip" data-do="style" data-k="${k}" data-v="${v}" data-uid="${uid}" aria-pressed="${v === cur}" ${off}>${l}</button>`).join("")}</div>`;
+  return `<section class="card pad"><h2>מסך הבית</h2>
+    <div class="field">תמונת רקע<div class="btnrow">
+      <label class="btn sm"><input type="file" accept="image/*" class="vh" data-wp="${uid}" ${off}>${icon("upload", 18)}החלפת תמונה</label>
+      <button class="btn sm" data-do="style" data-k="bg" data-v="" data-uid="${uid}" ${off}>${icon("refresh", 18)}הרקע המקורי</button></div></div>
+    <div class="field" style="margin-top:14px">גודל האייקונים${chips(SIZES, "size", size)}</div>
+    <div class="field" style="margin-top:14px">מיקום במסך${chips(POSITIONS, "pos", pos)}</div>
+    <p class="hint" style="margin-top:14px">לשינוי הסדר: בטלוויזיה, ללחוץ לחיצה ארוכה על OK על אפליקציה ולהזיז עם החצים.</p>
+  </section>`;
+}
+async function sendStyle(uid, k, v) {
+  await cmd(uid, "style", { [k]: v });
+  if (k !== "bg") await patch(`tvs/${uid}/meta/style`, { [k]: v });
 }
 const swatch = (c, on, attrs, label = "צבע") => `<button class="sw" style="--c:${esc(c)}" aria-pressed="${on}" aria-label="${esc(label)}" title="${esc(label)}" ${attrs}></button>`;
 
@@ -994,7 +1012,7 @@ document.addEventListener("click", async e => {
     case "open": return cmd(uid, "open", { pkg: b.dataset.pkg });
     case "hdmi": return cmd(uid, "hdmi", { input: b.dataset.input });
     case "url": return askUrl(uid);
-    case "wpReset": return cmd(uid, "wallpaper", { img: "" });
+    case "style": return sendStyle(uid, b.dataset.k, b.dataset.k === "size" ? +b.dataset.v : b.dataset.v);
     case "skip": {
       const min = +b.dataset.min;
       await setConfig(uid, "bedtime/skipUntil", min ? Date.now() + min * 60000 : 0);
@@ -1034,7 +1052,7 @@ document.addEventListener("change", async e => {
   if (el.dataset.wp) {
     const f = el.files[0]; el.value = ""; if (!f) return;
     toast("מעלה את התמונה…");
-    try { await cmd(el.dataset.wp, "wallpaper", { img: DEMO ? "demo1" : await uploadImage(await shrink(f, 1600, .85)) }); }
+    try { await sendStyle(el.dataset.wp, "bg", DEMO ? "demo1" : await uploadImage(await shrink(f, 1600, .85))); }
     catch { toast("ההעלאה נכשלה", "err"); }
     return;
   }
@@ -1080,7 +1098,7 @@ function demoData() {
   const now = Date.now(), day = n => { const d = new Date(now + n * 864e5); return ymd(d.getFullYear(), d.getMonth() + 1, d.getDate()); };
   const apps = [["com.google.android.youtube.tv", "YouTube"], ["com.netflix.ninja", "Netflix"], ["il.co.partner.tv", "פרטנר TV"], ["com.disney.disneyplus", "Disney+"],
     ["com.spotify.tv.android", "Spotify"], ["com.android.vending", "Google Play"], ["il.co.kan", "כאן"], ["com.keshet.mako", "mako"]].map(([pkg, label]) => ({ pkg, label }));
-  const info = (ip, admin) => ({ model: "Xiaomi MiTV-MSSP2", android: "9", ip, version: 7, canScreenOff: admin, canWallpaper: true, apps, inputs: [{ id: "hdmi1", label: "HDMI 1" }, { id: "hdmi2", label: "HDMI 2" }] });
+  const info = (ip, admin) => ({ model: "Xiaomi MiTV-MSSP2", android: "9", ip, version: 7, canScreenOff: admin, canStyle: true, apps, inputs: [{ id: "hdmi1", label: "HDMI 1" }, { id: "hdmi2", label: "HDMI 2" }] });
   const status = (ago, on, more) => ({ lastSeen: now - ago, screenOn: on, app: "", appLabel: "", volume: 9, maxVolume: 15, muted: false, locked: false, bedtimeNow: false, ...more });
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 200"><rect width="320" height="200" fill="#9cc7e8"/><circle cx="250" cy="55" r="26" fill="#ffe27a"/><path d="M0 200 90 90l60 70 50-40 120 80z" fill="#4f8a5b"/></svg>`;
   return {
