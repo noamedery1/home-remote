@@ -248,14 +248,17 @@ label.btn { position: relative; cursor: pointer; }
 .scrim { position: fixed; inset: 0; z-index: 50; display: flex; align-items: flex-end; justify-content: center; background: rgba(5,8,12,.56); }
 .sheet { width: 100%; max-width: 560px; max-height: 92vh; max-height: 92dvh; display: flex; flex-direction: column; background: var(--s1); border: 1px solid var(--line); border-bottom: 0; border-radius: 18px 18px 0 0; box-shadow: var(--pop); }
 .sheet.wide { max-width: 860px; }
-.board { position: relative; aspect-ratio: 7 / 2; border-radius: 12px; overflow: hidden; touch-action: none; direction: ltr;
+.screenbox { position: relative; flex: none; width: 100%; aspect-ratio: 16 / 9; border-radius: 12px; overflow: hidden; background: #111 center / cover; }
+.screenbox .board { position: absolute; border-radius: 0; aspect-ratio: auto; min-height: 0; box-shadow: 0 0 0 2px var(--accent); }
+.shotbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.board { position: relative; flex: none; width: 100%; aspect-ratio: 7 / 2; min-height: 90px; border-radius: 12px; overflow: hidden; touch-action: none; direction: ltr;
   background: #111 var(--bg, none) center / cover; box-shadow: inset 0 0 0 1px var(--line);
   background-image: var(--bg, none); }
 .board::before { content: ""; position: absolute; inset: 0; pointer-events: none;
   background-image: linear-gradient(to right, rgba(255,255,255,.12) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,.12) 1px, transparent 1px);
   background-size: calc(100% / 8) calc(100% / 4); }
 .bt { position: absolute; padding: 4px; cursor: grab; user-select: none; }
-.bt > div { height: 100%; border-radius: 10px; background: rgba(255,255,255,.92); color: #111; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,.4); }
+.bt > div { height: 100%; border-radius: 10px; background: rgba(255,255,255,.88); color: #111; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,.4); }
 .bt.drag > div { outline: 3px solid var(--accent); }
 .bt img, .bt .appph { max-width: 70%; max-height: 55%; object-fit: contain; }
 .bt .x { position: absolute; top: 0; right: 0; width: 26px; height: 26px; border-radius: 50%; background: #000; color: #fff; font-size: 14px; line-height: 26px; text-align: center; }
@@ -678,7 +681,7 @@ function homeStyleCard(t, uid, off) {
       <button class="btn sm" data-do="style" data-k="bg" data-v="" data-uid="${uid}" ${off}>${icon("refresh", 18)}הרקע המקורי</button></div></div>
     <div class="btnrow" style="margin-top:14px"><button class="btn sm primary" data-do="layout" data-uid="${uid}" ${off}>${icon("plus", 18)}סידור המסך — גרירה חופשית</button>
       ${st.layout ? `<button class="btn sm" data-do="style" data-k="layout" data-v="" data-uid="${uid}" ${off}>חזרה לשורה רגילה</button>` : ""}</div>
-    <div class="field" style="margin-top:14px">גודל האייקונים${st.layout ? ` <span class="hint">(בסידור חופשי הגודל נקבע בגרירה)</span>` : ""}${chips(SIZES, "size", size)}</div>
+    <div class="field" style="margin-top:14px">גודל האייקונים${chips(SIZES, "size", size)}</div>
     <div class="field" style="margin-top:14px">מיקום במסך${chips(POSITIONS, "pos", pos)}</div>
     <p class="hint" style="margin-top:14px">אפשר גם בטלוויזיה: לחיצה ארוכה על OK על אפליקציה, ואז להזיז עם החצים.</p>
   </section>`;
@@ -695,16 +698,25 @@ function openLayout(uid) {
   const t = tvs[uid], info = t.info || {};
   const choices = [...(info.apps || []).map(a => ({ id: a.pkg, label: a.label })),
     ...(info.inputs || []).map(i => ({ id: "hdmi:" + i.id, label: i.label, hdmi: true }))];
-  const labelOf = id => choices.find(c => c.id === id)?.label || id;
+  const labelOf = id => choices.find(c => c.id === id)?.label || (id.startsWith("hdmi:") ? "HDMI" : id);
   let lay = Array.isArray(t.meta?.style?.layout) ? t.meta.style.layout.map(x => ({ ...x })) : [];
   if (!lay.length) for (const id of LAYOUT_START) if (choices.some(c => c.id === id)) lay.push({ id, ...freeSpot(lay), w: 2, h: 2 });
+  let touched = false, lastAt = t.info?.shot?.at || 0, offShot = () => {};
   const close = openSheet("סידור המסך", `
-    <p class="hint" style="margin-bottom:10px">גוררים אפליקציה למקום אחר, מגדילים מהפינה הכתומה, ✕ מוריד מהמסך. זה האזור של האפליקציות בטלוויזיה.</p>
-    <div class="board" id="board"></div>
-    <div class="field" style="margin-top:14px">הוספה למסך<div class="chips" id="lapps"></div></div>`,
-    `<button class="btn primary" id="lsave">שליחה לטלוויזיה</button><button class="btn" data-close>ביטול</button>`, { wide: true });
-  const board = $("#board");
-  imageSrc(t.meta?.style?.bg ? "img:" + t.meta.style.bg : "").then(src => { if (src) board.style.setProperty("--bg", `url("${src}")`); });
+    <p class="hint">זה המסך של הטלוויזיה עכשיו. גוררים אפליקציה למקום אחר, מגדילים מהפינה הכתומה, ✕ מוריד. בטלפון נוח יותר לסובב לרוחב.</p>
+    <div class="shotbar"><span class="hint" id="shotst">מצלם את הטלוויזיה…</span>
+      <button class="btn sm" id="reshot">${icon("refresh", 18)}צילום מחדש</button>
+      <button class="btn sm" id="gohome" hidden>${icon("home", 18)}מעבר למסך הבית וצילום</button></div>
+    <div class="screenbox" id="scr"><div class="board" id="board"></div></div>
+    <div class="field">הוספה למסך<div class="chips" id="lapps"></div></div>`,
+    `<button class="btn primary" id="lsave">שליחה לטלוויזיה</button><button class="btn" data-close>סגירה</button>`, { wide: true, onClose: () => offShot() });
+  const board = $("#board"), scr = $("#scr");
+  const place = area => {   // the app area inside the screenshot (fractions of the screen); default: between header and news
+    const [x, y, w, h] = area || [.03, .17, .94, .58];
+    Object.assign(board.style, { left: x * 100 + "%", top: y * 100 + "%", width: w * 100 + "%", height: h * 100 + "%" });
+  };
+  place(null);
+  imageSrc(t.meta?.style?.bg ? "img:" + t.meta.style.bg : "").then(src => { if (src && !scr.dataset.shot) scr.style.backgroundImage = `url("${src}")`; });
   const draw = () => {
     board.innerHTML = lay.map((b, i) => `<div class="bt" data-i="${i}" style="left:${b.x / GRID_COLS * 100}%;top:${b.y / GRID_ROWS * 100}%;width:${b.w / GRID_COLS * 100}%;height:${b.h / GRID_ROWS * 100}%">
       <div>${b.id.startsWith("hdmi:") ? icon("plug", 22) : appIcon(t, b.id, labelOf(b.id))}<span>${esc(labelOf(b.id))}</span></div>
@@ -713,13 +725,27 @@ function openLayout(uid) {
       .map(c => `<button class="chip" data-add="${esc(c.id)}">${icon("plus", 16)}${esc(c.label)}</button>`).join("") || `<span class="hint">כל האפליקציות כבר על המסך</span>`;
   };
   draw();
-  $("#lapps").onclick = e => { const b = e.target.closest("[data-add]"); if (b) { lay.push({ id: b.dataset.add, ...freeSpot(lay), w: 2, h: 2 }); draw(); } };
-  board.onclick = e => { const b = e.target.closest("[data-rm]"); if (b) { lay.splice(+b.dataset.rm, 1); draw(); } };
+  const shotIn = sh => {
+    if (!sh || !sh.at || sh.at === lastAt) return;
+    lastAt = sh.at;
+    const home = sh.home && sh.home.area ? sh.home : null;
+    if (sh.img) { scr.dataset.shot = 1; scr.style.backgroundImage = `url("${sh.img}")`; }
+    if (home) { place(home.area); if (!touched && home.tiles?.length) { lay = home.tiles.map(x => ({ ...x })); draw(); } }
+    $("#shotst").textContent = sh.img ? `צולם ${hhmm(sh.at)}` : home ? "הטלוויזיה לא במסך הבית, אז אין צילום (הסידור כן נטען)" : "לא הצלחתי לצלם את המסך";
+    $("#gohome").hidden = !!sh.img;
+  };
+  const shoot = home => { $("#shotst").textContent = "מצלם את הטלוויזיה…"; cmd(uid, "shot", home ? { home: true } : {}, true); };
+  if (!DEMO) offShot = fb.onValue(fb.ref(db, `tvs/${uid}/info/shot`), x => shotIn(x.val()));
+  shoot(false);
+  $("#reshot").onclick = () => shoot(false);
+  $("#gohome").onclick = () => shoot(true);
+  $("#lapps").onclick = e => { const b = e.target.closest("[data-add]"); if (b) { touched = true; lay.push({ id: b.dataset.add, ...freeSpot(lay), w: 2, h: 2 }); draw(); } };
+  board.onclick = e => { const b = e.target.closest("[data-rm]"); if (b) { touched = true; lay.splice(+b.dataset.rm, 1); draw(); } };
   // drag = move, drag the orange corner = resize; snapped to the grid
   board.onpointerdown = e => {
     if (e.target.closest("[data-rm]")) return;
     const el = e.target.closest(".bt"); if (!el) return;
-    e.preventDefault();
+    e.preventDefault(); touched = true;
     const i = +el.dataset.i, b = lay[i], resize = !!e.target.closest("[data-rs]"), r = board.getBoundingClientRect();
     const cw = r.width / GRID_COLS, ch = r.height / GRID_ROWS, sx = e.clientX, sy = e.clientY, o = { ...b };
     el.classList.add("drag"); board.setPointerCapture(e.pointerId);
@@ -734,7 +760,8 @@ function openLayout(uid) {
   $("#lsave").onclick = async () => {
     if (!lay.length) return toast("צריך לפחות אפליקציה אחת על המסך", "err");
     await sendStyle(uid, "layout", lay.map(({ id, x, y, w, h }) => ({ id, x, y, w, h })));
-    close();
+    touched = false;
+    setTimeout(() => shoot(false), 2500);   // show the result
   };
 }
 async function sendStyle(uid, k, v) {
