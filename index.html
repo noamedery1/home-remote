@@ -248,6 +248,18 @@ label.btn { position: relative; cursor: pointer; }
 .scrim { position: fixed; inset: 0; z-index: 50; display: flex; align-items: flex-end; justify-content: center; background: rgba(5,8,12,.56); }
 .sheet { width: 100%; max-width: 560px; max-height: 92vh; max-height: 92dvh; display: flex; flex-direction: column; background: var(--s1); border: 1px solid var(--line); border-bottom: 0; border-radius: 18px 18px 0 0; box-shadow: var(--pop); }
 .sheet.wide { max-width: 860px; }
+.board { position: relative; aspect-ratio: 7 / 2; border-radius: 12px; overflow: hidden; touch-action: none; direction: ltr;
+  background: #111 var(--bg, none) center / cover; box-shadow: inset 0 0 0 1px var(--line);
+  background-image: var(--bg, none); }
+.board::before { content: ""; position: absolute; inset: 0; pointer-events: none;
+  background-image: linear-gradient(to right, rgba(255,255,255,.12) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,.12) 1px, transparent 1px);
+  background-size: calc(100% / 8) calc(100% / 4); }
+.bt { position: absolute; padding: 4px; cursor: grab; user-select: none; }
+.bt > div { height: 100%; border-radius: 10px; background: rgba(255,255,255,.92); color: #111; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,.4); }
+.bt.drag > div { outline: 3px solid var(--accent); }
+.bt img, .bt .appph { max-width: 70%; max-height: 55%; object-fit: contain; }
+.bt .x { position: absolute; top: 0; right: 0; width: 26px; height: 26px; border-radius: 50%; background: #000; color: #fff; font-size: 14px; line-height: 26px; text-align: center; }
+.bt .rs { position: absolute; bottom: 0; right: 0; width: 22px; height: 22px; border-radius: 6px 0 10px 0; background: var(--accent); cursor: nwse-resize; }
 .sh-head { display: flex; align-items: center; gap: 12px; padding: 12px 20px 4px 10px; }
 .sh-head h2 { flex: 1; font-size: 18px; line-height: 1.35; }
 .sh-body { overflow: auto; padding: 8px 20px 18px; display: flex; flex-direction: column; gap: 16px; }
@@ -664,14 +676,70 @@ function homeStyleCard(t, uid, off) {
     <div class="field">תמונת רקע<div class="btnrow">
       <label class="btn sm"><input type="file" accept="image/*" class="vh" data-wp="${uid}" ${off}>${icon("upload", 18)}החלפת תמונה</label>
       <button class="btn sm" data-do="style" data-k="bg" data-v="" data-uid="${uid}" ${off}>${icon("refresh", 18)}הרקע המקורי</button></div></div>
-    <div class="field" style="margin-top:14px">גודל האייקונים${chips(SIZES, "size", size)}</div>
+    <div class="btnrow" style="margin-top:14px"><button class="btn sm primary" data-do="layout" data-uid="${uid}" ${off}>${icon("plus", 18)}סידור המסך — גרירה חופשית</button>
+      ${st.layout ? `<button class="btn sm" data-do="style" data-k="layout" data-v="" data-uid="${uid}" ${off}>חזרה לשורה רגילה</button>` : ""}</div>
+    <div class="field" style="margin-top:14px">גודל האייקונים${st.layout ? ` <span class="hint">(בסידור חופשי הגודל נקבע בגרירה)</span>` : ""}${chips(SIZES, "size", size)}</div>
     <div class="field" style="margin-top:14px">מיקום במסך${chips(POSITIONS, "pos", pos)}</div>
-    <p class="hint" style="margin-top:14px">לשינוי הסדר: בטלוויזיה, ללחוץ לחיצה ארוכה על OK על אפליקציה ולהזיז עם החצים.</p>
+    <p class="hint" style="margin-top:14px">אפשר גם בטלוויזיה: לחיצה ארוכה על OK על אפליקציה, ואז להזיז עם החצים.</p>
   </section>`;
+}
+// free layout editor: the TV's app area as an 8x4 grid (same as Grid.java on the TV), tiles {id,x,y,w,h}, x from the left
+const GRID_COLS = 8, GRID_ROWS = 4;
+const LAYOUT_START = ["com.google.android.youtube.tv", "com.netflix.ninja", "il.co.partnertv.atv", "com.israeltv.plus"];
+function freeSpot(l) {
+  for (let y = 0; y + 2 <= GRID_ROWS; y++) for (let x = 0; x + 2 <= GRID_COLS; x++)
+    if (!l.some(t => x < t.x + t.w && t.x < x + 2 && y < t.y + t.h && t.y < y + 2)) return { x, y };
+  return { x: 0, y: 0 };
+}
+function openLayout(uid) {
+  const t = tvs[uid], info = t.info || {};
+  const choices = [...(info.apps || []).map(a => ({ id: a.pkg, label: a.label })),
+    ...(info.inputs || []).map(i => ({ id: "hdmi:" + i.id, label: i.label, hdmi: true }))];
+  const labelOf = id => choices.find(c => c.id === id)?.label || id;
+  let lay = Array.isArray(t.meta?.style?.layout) ? t.meta.style.layout.map(x => ({ ...x })) : [];
+  if (!lay.length) for (const id of LAYOUT_START) if (choices.some(c => c.id === id)) lay.push({ id, ...freeSpot(lay), w: 2, h: 2 });
+  const close = openSheet("סידור המסך", `
+    <p class="hint" style="margin-bottom:10px">גוררים אפליקציה למקום אחר, מגדילים מהפינה הכתומה, ✕ מוריד מהמסך. זה האזור של האפליקציות בטלוויזיה.</p>
+    <div class="board" id="board"></div>
+    <div class="field" style="margin-top:14px">הוספה למסך<div class="chips" id="lapps"></div></div>`,
+    `<button class="btn primary" id="lsave">שליחה לטלוויזיה</button><button class="btn" data-close>ביטול</button>`, { wide: true });
+  const board = $("#board");
+  imageSrc(t.meta?.style?.bg ? "img:" + t.meta.style.bg : "").then(src => { if (src) board.style.setProperty("--bg", `url("${src}")`); });
+  const draw = () => {
+    board.innerHTML = lay.map((b, i) => `<div class="bt" data-i="${i}" style="left:${b.x / GRID_COLS * 100}%;top:${b.y / GRID_ROWS * 100}%;width:${b.w / GRID_COLS * 100}%;height:${b.h / GRID_ROWS * 100}%">
+      <div>${b.id.startsWith("hdmi:") ? icon("plug", 22) : appIcon(t, b.id, labelOf(b.id))}<span>${esc(labelOf(b.id))}</span></div>
+      <button class="x" data-rm="${i}" aria-label="הסרה">✕</button><span class="rs" data-rs="${i}"></span></div>`).join("");
+    $("#lapps").innerHTML = choices.filter(c => !lay.some(b => b.id === c.id))
+      .map(c => `<button class="chip" data-add="${esc(c.id)}">${icon("plus", 16)}${esc(c.label)}</button>`).join("") || `<span class="hint">כל האפליקציות כבר על המסך</span>`;
+  };
+  draw();
+  $("#lapps").onclick = e => { const b = e.target.closest("[data-add]"); if (b) { lay.push({ id: b.dataset.add, ...freeSpot(lay), w: 2, h: 2 }); draw(); } };
+  board.onclick = e => { const b = e.target.closest("[data-rm]"); if (b) { lay.splice(+b.dataset.rm, 1); draw(); } };
+  // drag = move, drag the orange corner = resize; snapped to the grid
+  board.onpointerdown = e => {
+    if (e.target.closest("[data-rm]")) return;
+    const el = e.target.closest(".bt"); if (!el) return;
+    e.preventDefault();
+    const i = +el.dataset.i, b = lay[i], resize = !!e.target.closest("[data-rs]"), r = board.getBoundingClientRect();
+    const cw = r.width / GRID_COLS, ch = r.height / GRID_ROWS, sx = e.clientX, sy = e.clientY, o = { ...b };
+    el.classList.add("drag"); board.setPointerCapture(e.pointerId);
+    board.onpointermove = m => {
+      const dx = Math.round((m.clientX - sx) / cw), dy = Math.round((m.clientY - sy) / ch);
+      if (resize) { b.w = Math.max(1, Math.min(GRID_COLS - o.x, o.w + dx)); b.h = Math.max(1, Math.min(GRID_ROWS - o.y, o.h + dy)); }
+      else { b.x = Math.max(0, Math.min(GRID_COLS - o.w, o.x + dx)); b.y = Math.max(0, Math.min(GRID_ROWS - o.h, o.y + dy)); }
+      Object.assign(el.style, { left: b.x / GRID_COLS * 100 + "%", top: b.y / GRID_ROWS * 100 + "%", width: b.w / GRID_COLS * 100 + "%", height: b.h / GRID_ROWS * 100 + "%" });
+    };
+    board.onpointerup = board.onpointercancel = () => { board.onpointermove = board.onpointerup = board.onpointercancel = null; el.classList.remove("drag"); };
+  };
+  $("#lsave").onclick = async () => {
+    if (!lay.length) return toast("צריך לפחות אפליקציה אחת על המסך", "err");
+    await sendStyle(uid, "layout", lay.map(({ id, x, y, w, h }) => ({ id, x, y, w, h })));
+    close();
+  };
 }
 async function sendStyle(uid, k, v) {
   await cmd(uid, "style", { [k]: v });
-  if (k !== "bg") await patch(`tvs/${uid}/meta/style`, { [k]: v });
+  await patch(`tvs/${uid}/meta/style`, { [k]: v });
 }
 const swatch = (c, on, attrs, label = "צבע") => `<button class="sw" style="--c:${esc(c)}" aria-pressed="${on}" aria-label="${esc(label)}" title="${esc(label)}" ${attrs}></button>`;
 
@@ -1012,6 +1080,7 @@ document.addEventListener("click", async e => {
     case "open": return cmd(uid, "open", { pkg: b.dataset.pkg });
     case "hdmi": return cmd(uid, "hdmi", { input: b.dataset.input });
     case "url": return askUrl(uid);
+    case "layout": return openLayout(uid);
     case "style": return sendStyle(uid, b.dataset.k, b.dataset.k === "size" ? +b.dataset.v : b.dataset.v);
     case "skip": {
       const min = +b.dataset.min;
