@@ -699,14 +699,24 @@ function openLayout(uid) {
   const choices = [...(info.apps || []).map(a => ({ id: a.pkg, label: a.label })),
     ...(info.inputs || []).map(i => ({ id: "hdmi:" + i.id, label: i.label, hdmi: true }))];
   const labelOf = id => choices.find(c => c.id === id)?.label || (id.startsWith("hdmi:") ? "HDMI" : id);
-  let lay = Array.isArray(t.meta?.style?.layout) ? t.meta.style.layout.map(x => ({ ...x })) : [];
-  if (!lay.length) for (const id of LAYOUT_START) if (choices.some(c => c.id === id)) lay.push({ id, ...freeSpot(lay), w: 2, h: 2 });
+  const saved = t.meta?.style?.layout;
+  // living room: one layout per mode {parents: [...], kids: [...]}, and the Partner TV + notes are blocks too
+  let living = !!saved && typeof saved === "object" && !Array.isArray(saved), profile = "parents";
+  const layouts = living ? JSON.parse(JSON.stringify(saved)) : {};
+  let lay = living ? (layouts.parents || []) : Array.isArray(saved) ? saved.map(x => ({ ...x })) : [];
+  if (!lay.length && !living) for (const id of LAYOUT_START) if (choices.some(c => c.id === id)) lay.push({ id, ...freeSpot(lay), w: 2, h: 2 });
+  const becomeLiving = () => {
+    if (!choices.some(c => c.id === "notes")) choices.unshift({ id: "tv", label: "הטלוויזיה (פרטנר)" }, { id: "notes", label: "פתקים" });
+    living = true; $("#lprof").hidden = false;
+  };
   let touched = false, lastAt = t.info?.shot?.at || 0, offShot = () => {};
   const close = openSheet("סידור המסך", `
     <p class="hint">זה המסך של הטלוויזיה עכשיו. גוררים אפליקציה למקום אחר, מגדילים מהפינה הכתומה, ✕ מוריד. בטלפון נוח יותר לסובב לרוחב.</p>
     <div class="shotbar"><span class="hint" id="shotst">מצלם את הטלוויזיה…</span>
       <button class="btn sm" id="reshot">${icon("refresh", 18)}צילום מחדש</button>
       <button class="btn sm" id="gohome" hidden>${icon("home", 18)}מעבר למסך הבית וצילום</button></div>
+    <div class="chips" id="lprof" hidden>${[["parents", "הורים"], ["kids", "ילדים"]].map(([v, l]) => `<button class="chip" data-prof="${v}" aria-pressed="${v === "parents"}">${l}</button>`).join("")}
+      <span class="hint">לכל מצב סידור משלו</span></div>
     <div class="screenbox" id="scr"><div class="board" id="board"></div></div>
     <div class="field">הוספה למסך<div class="chips" id="lapps"></div></div>`,
     `<button class="btn primary" id="lsave">שליחה לטלוויזיה</button><button class="btn" data-close>סגירה</button>`, { wide: true, onClose: () => offShot() });
@@ -719,18 +729,34 @@ function openLayout(uid) {
   imageSrc(t.meta?.style?.bg ? "img:" + t.meta.style.bg : "").then(src => { if (src && !scr.dataset.shot) scr.style.backgroundImage = `url("${src}")`; });
   const draw = () => {
     board.innerHTML = lay.map((b, i) => `<div class="bt" data-i="${i}" style="left:${b.x / GRID_COLS * 100}%;top:${b.y / GRID_ROWS * 100}%;width:${b.w / GRID_COLS * 100}%;height:${b.h / GRID_ROWS * 100}%">
-      <div>${b.id.startsWith("hdmi:") ? icon("plug", 22) : appIcon(t, b.id, labelOf(b.id))}<span>${esc(labelOf(b.id))}</span></div>
+      <div>${b.id.startsWith("hdmi:") ? icon("plug", 22) : b.id === "tv" ? icon("tv", 26) : b.id === "notes" ? `<span style="font-size:22px">📌</span>` : appIcon(t, b.id, labelOf(b.id))}<span>${esc(labelOf(b.id))}</span></div>
       <button class="x" data-rm="${i}" aria-label="הסרה">✕</button><span class="rs" data-rs="${i}"></span></div>`).join("");
     $("#lapps").innerHTML = choices.filter(c => !lay.some(b => b.id === c.id))
       .map(c => `<button class="chip" data-add="${esc(c.id)}">${icon("plus", 16)}${esc(c.label)}</button>`).join("") || `<span class="hint">כל האפליקציות כבר על המסך</span>`;
   };
+  if (living) becomeLiving();
   draw();
+  $("#lprof").onclick = e => {
+    const b = e.target.closest("[data-prof]"); if (!b || b.dataset.prof === profile) return;
+    layouts[profile] = lay; profile = b.dataset.prof; lay = (layouts[profile] || []).map(x => ({ ...x }));
+    pressOne($("#lprof"), b); draw();
+    $("#shotst").textContent = profile === (lastHome?.profile) ? $("#shotst").textContent : "הצילום מציג את המצב שפתוח בטלוויזיה עכשיו";
+  };
+  let lastHome = null;
   const shotIn = sh => {
     if (!sh || !sh.at || sh.at === lastAt) return;
     lastAt = sh.at;
     const home = sh.home && sh.home.area ? sh.home : null;
     if (sh.img) { scr.dataset.shot = 1; scr.style.backgroundImage = `url("${sh.img}")`; }
-    if (home) { place(home.area); if (!touched && home.tiles?.length) { lay = home.tiles.map(x => ({ ...x })); draw(); } }
+    if (home) {
+      lastHome = home; place(home.area);
+      if (home.profile) {   // living room
+        if (!living) becomeLiving();
+        if (!touched) { profile = home.profile; pressOne($("#lprof"), $(`#lprof [data-prof="${profile}"]`)); }
+      }
+      if (!touched && home.tiles?.length) { lay = home.tiles.map(x => ({ ...x })); if (living) layouts[profile] = lay; }
+      draw();
+    }
     $("#shotst").textContent = sh.img ? `צולם ${hhmm(sh.at)}` : home ? "הטלוויזיה לא במסך הבית, אז אין צילום (הסידור כן נטען)" : "לא הצלחתי לצלם את המסך";
     $("#gohome").hidden = !!sh.img;
   };
@@ -759,7 +785,9 @@ function openLayout(uid) {
   };
   $("#lsave").onclick = async () => {
     if (!lay.length) return toast("צריך לפחות אפליקציה אחת על המסך", "err");
-    await sendStyle(uid, "layout", lay.map(({ id, x, y, w, h }) => ({ id, x, y, w, h })));
+    const clean = l => l.map(({ id, x, y, w, h }) => ({ id, x, y, w, h }));
+    if (living) { layouts[profile] = lay; for (const k in layouts) layouts[k] = clean(layouts[k] || []); }
+    await sendStyle(uid, "layout", living ? layouts : clean(lay));
     touched = false;
     setTimeout(() => shoot(false), 2500);   // show the result
   };
